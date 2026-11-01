@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>body{font:13px -apple-system,sans-serif;line-height:1.45}</style></head>
+<body>
+<h2>HP Laser 103/107/108 driver for macOS</h2>
+<p>An open-source driver for the HP Laser 103, 107 and 108 printers (USB). It lets macOS print
+to these host-based printers, which have no PostScript or PCL support of their own.</p>
+<p>It installs:</p>
+<ul>
+<li>a printer driver, listed as <b>HP Laser 103/107/108 (hp10x)</b></li>
+<li>a small background service that stops macOS from taking over the printer's USB
+connection with its IPP-over-USB service, which these printers don't support properly</li>
+</ul>
+<p>After installing, add the printer in <b>System Settings → Printers &amp; Scanners</b>, and choose
+<b>HP Laser 103/107/108 (hp10x)</b> under <b>Use</b>.</p>
+<p>To remove it later, run <code>sudo /Library/Printers/hp10x/uninstall.sh</code> in Terminal.</p>
+<p style="color:#666">Not affiliated with or endorsed by HP Inc.</p>
+</body></html>

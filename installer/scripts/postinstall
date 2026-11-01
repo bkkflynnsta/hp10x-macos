@@ -1,0 +1,17 @@
+#!/bin/sh
+# hp10x postinstall: start the ippusbd guard and protect any printer already connected.
+PLIST=/Library/LaunchDaemons/com.pointcleardigital.hp10x.ippusb-guard.plist
+DIR=/Library/Printers/hp10x
+
+# CUPS refuses filters that aren't root-owned or are group/world-writable.
+/usr/sbin/chown -R root:wheel "$DIR"
+/bin/chmod -R go-w "$DIR"
+/usr/sbin/chown root:wheel "$PLIST"
+/bin/chmod 644 "$PLIST"
+
+/bin/launchctl bootstrap system "$PLIST" 2>/dev/null || /bin/launchctl kickstart -k system/com.pointcleardigital.hp10x.ippusb-guard
+"$DIR/hp10x-ippusb-guard" --once
+
+# Let CUPS pick up the new PPD.
+/bin/launchctl kickstart -k system/org.cups.cupsd 2>/dev/null
+exit 0

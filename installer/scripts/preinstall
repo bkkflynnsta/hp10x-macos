@@ -1,0 +1,4 @@
+#!/bin/sh
+# hp10x preinstall: stop a previously installed guard daemon before files are replaced.
+/bin/launchctl bootout system/com.pointcleardigital.hp10x.ippusb-guard 2>/dev/null
+exit 0

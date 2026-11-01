@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and troubleshooting guide
+    url: https://github.com/bkkflynnsta/hp10x-macos#troubleshooting
+    about: Check the README first if the printer shows offline or jobs vanish.

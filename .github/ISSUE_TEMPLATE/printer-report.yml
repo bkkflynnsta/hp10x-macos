@@ -1,0 +1,88 @@
+name: Printer report
+description: Tell us how hp10x works on your HP Laser 103, 107 or 108, whether it works or not.
+title: "[Printer report] HP Laser "
+labels: ["printer report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing! hp10x has only been tested on a 108a, so reports from other models help most, including "it just works".
+        hp10x prints over **USB only**. If you have a "w" model, connect it by USB cable for this report.
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Printer model
+      options:
+        - HP Laser 103a
+        - HP Laser 107a
+        - HP Laser 107w
+        - HP Laser 108a
+        - HP Laser 108w
+        - Other (say which below)
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      description: From  → About This Mac.
+      placeholder: "macOS 27.0.1, MacBook Air M3"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: hp10x version
+      placeholder: "0.3.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: device-id
+    attributes:
+      label: Printer's USB device ID
+      description: |
+        With the printer connected and on, run this in Terminal and paste the output (it identifies the model and firmware; it doesn't include anything personal):
+        ```
+        /usr/libexec/cups/backend/usb | grep -i laser
+        ```
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: works
+    attributes:
+      label: What printed correctly?
+      description: Tick what you tried and it worked. Leave the rest unticked and say what happened below.
+      options:
+        - label: A test page or document at 600 dpi (the default)
+        - label: 1200 dpi (High Resolution)
+        - label: Toner Save
+        - label: Two-sided printing (Step 1 then Step 2)
+        - label: A custom paper size
+        - label: The printer stayed online after switching it off and on
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Anything that didn't work or looked wrong, e.g. "page cut off on the right", "job vanished", "printer shows offline", "light kept blinking". Paper size and which option you used help a lot.
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: |
+        If a job failed, run these in Terminal, print again, then paste the lines from around that job:
+        ```
+        sudo cupsctl --debug-logging
+        tail -n 200 /var/log/cups/error_log
+        sudo cupsctl --no-debug-logging
+        ```
+      render: text

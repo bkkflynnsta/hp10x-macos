@@ -65,8 +65,9 @@ int main(int argc, char **argv)
                 return fail("truncated page header", p);
             int yres = h[1] * 100, xres = h[0x10] * 100;
             int w300 = (h[5] << 8) | h[6], h300 = (h[7] << 8) | h[8];
-            width = w300 * xres / 300;
-            height = h300 * yres / 300;
+            /* The size field is 1/300 inch scaled by 600/dpi: 1/150 inch at 1200 dpi. */
+            width = (int)((long)w300 * xres * xres / 180000);
+            height = (int)((long)h300 * yres * yres / 180000);
             row_bytes = (width + 7) / 8;
             free(bmp);
             bmp = calloc((size_t)row_bytes, (size_t)height);

@@ -25,7 +25,29 @@ Despite the `URF` and `PWGRaster` entries above, these were tested on firmware `
 - **hp10x, the open-source driver from this project.** Build it with `installer/build-pkg.sh`, then run `sudo installer -pkg build/hp10x-<version>.pkg -target /`. Add the printer in System Settings and choose **HP Laser 103/107/108 (hp10x)** under **Use**. It also fixes the "printer is offline" problem described below automatically, with no Terminal commands. It's been tested on a 108a with macOS 27.0.1. See [docs/DEVELOPING.md](docs/DEVELOPING.md) for details.
 - **HP's Samsung driver**, set up as described in the rest of this guide.
 
-## What you need (HP's Samsung driver)
+### hp10x print options
+
+In the print dialog, these are under **Printer Options** (or **Printer Features**):
+
+| Option | Choices |
+|---|---|
+| Page Size | Letter, Legal, A4, A5, B5, Executive, Folio, Oficio, 4×6 postcard, four envelope sizes, or a custom size from 3×5 in (76×127 mm) up to US Legal |
+| Toner Save | Prints text as a solid outline with a lighter inside, and grays lighter; saves about a fifth of the toner |
+| Two-Sided Printing (Manual) | Off, or Step 1 / Step 2 for long-edge or short-edge binding (below) |
+
+Set the tray's paper guides snugly against the paper. A loose guide lets the sheet feed at an angle, which cuts off one edge.
+
+#### Two-sided printing
+
+The printer can't turn paper over, so you print the document twice:
+
+1. Print with **Two-Sided Printing (Manual): Long Edge, Step 1: Backs**, or Short Edge for flip-up pages like a calendar. It prints the even pages, last first, and a blank sheet first if the page count is odd. With Long Edge they come out upside down; that's intended.
+2. Take the printed stack from the output tray and put it straight into the input tray, **exactly as it lies**: still face down, not turned over and not turned around. You don't need to remove the blank paper underneath.
+3. Print the same document again with **Step 2: Fronts**. It prints the odd pages onto the backs of those sheets.
+
+Use the same copies setting for both steps. With several copies, each copy gets its own sheets.
+
+The printer has a built-in two-sided mode that pauses between sides, which HP's Samsung driver uses, but on the 108a under macOS it pauses and then drops the second side, with HP's driver as well. That's why hp10x uses two jobs.
 
 | Item | Notes |
 |---|---|

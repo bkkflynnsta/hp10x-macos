@@ -4,7 +4,7 @@
 *% Not affiliated with or endorsed by HP Inc. Page sizes and printable areas follow
 *% the Samsung M2020-series engine these printers are built on.
 *FormatVersion: "4.3"
-*FileVersion: "0.1.0"
+*FileVersion: "0.2.0"
 *LanguageVersion: English
 *LanguageEncoding: ISOLatin1
 *PCFileName: "HP10X.PPD"
@@ -33,7 +33,8 @@
 *cupsModelNumber: 0
 *cupsFilter: "application/vnd.cups-raster 0 /Library/Printers/hp10x/Filters/rastertohp10x"
 
-*% 600 dpi, 8-bit gray: the filter screens gray itself.
+*% 600 dpi, 8-bit gray: the filter screens gray itself. The filter can also encode
+*% 1200 dpi, but the 108a doesn't print 1200 dpi pages, even from HP's driver.
 *OpenUI *ColorModel/Color Mode: PickOne
 *OrderDependency: 10 AnySetup *ColorModel
 *DefaultColorModel: Gray
@@ -45,6 +46,18 @@
 *DefaultResolution: 600dpi
 *Resolution 600dpi/600 dpi: "<</HWResolution[600 600]>>setpagedevice"
 *CloseUI: *Resolution
+
+*% Two jobs: step 1 prints the backs; move the printed stack from the output tray to the
+*% input tray as it lies, then print the same document again with step 2 for the fronts.
+*OpenUI *ManualDuplex/Two-Sided Printing (Manual): PickOne
+*OrderDependency: 20 AnySetup *ManualDuplex
+*DefaultManualDuplex: None
+*ManualDuplex None/Off: ""
+*ManualDuplex LongEdgeBacks/Long Edge, Step 1: Backs: ""
+*ManualDuplex LongEdgeFronts/Long Edge, Step 2: Fronts: ""
+*ManualDuplex ShortEdgeBacks/Short Edge, Step 1: Backs: ""
+*ManualDuplex ShortEdgeFronts/Short Edge, Step 2: Fronts: ""
+*CloseUI: *ManualDuplex
 
 *OpenUI *TonerSave/Toner Save: Boolean
 *OrderDependency: 20 AnySetup *TonerSave
@@ -130,7 +143,15 @@
 *PaperDimension Env10/Envelope #10: "297 684"
 *PaperDimension EnvMonarch/Envelope Monarch: "279 540"
 
+*% Custom sizes: 3 x 5 in (76 x 127 mm) up to US Legal, as HP's driver allows.
+*VariablePaperSize: True
 *MaxMediaWidth: "612"
 *MaxMediaHeight: "1008"
 *HWMargins: 12.24 12.06 12.24 12.06
+*CustomPageSize True: "pop pop pop <</PageSize[5 -2 roll]/ImagingBBox null>>setpagedevice"
+*ParamCustomPageSize Width: 1 points 216 612
+*ParamCustomPageSize Height: 2 points 360 1008
+*ParamCustomPageSize WidthOffset: 3 points 0 0
+*ParamCustomPageSize HeightOffset: 4 points 0 0
+*ParamCustomPageSize Orientation: 5 int 0 0
 *% End of HP-Laser-10x.ppd

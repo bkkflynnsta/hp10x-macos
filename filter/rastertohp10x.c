@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * Usage (CUPS): rastertohp10x job user title copies options [file]
- * Accepts 8-bit gray (K, W or sGray; screened here) or 1-bit (K or W) raster.
- * Options read from argv[5]: TonerSave=True|False
+ * Accepts 8-bit gray (K, W or sGray; screened here) or 1-bit (K or W) raster, at
+ * 600 or 1200 dpi. The PPD asks for 600: the 108a drops 1200 dpi pages, even HP's. Both become darkness rows (0 = white, 255 = black) before screening.
+ * Options read from argv[5]: TonerSave=True|False,
+ *   ManualDuplex=None|LongEdgeBacks|LongEdgeFronts|ShortEdgeBacks|ShortEdgeFronts
  * Copies are made upstream (the PPD sets cupsManualCopies), so each page is sent once.
  */
 #include "../src/halftone.h"
@@ -13,7 +15,9 @@
 
 #include <cups/cups.h>
 #include <cups/raster.h>
+#include <ctype.h>
 #include <fcntl.h>
+#include <math.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,6 +39,23 @@ static int is_white_space(cups_cspace_t cs)
     return cs == CUPS_CSPACE_W || cs == CUPS_CSPACE_SW;
 }
 
+/* Screen darkness row `y` (toner save also reads the rows around it) and send it on. */
+static int emit_row(spl_writer *w, const uint8_t *dark, int ring, int reach, unsigned y,
+                    unsigned have, int width, int dpi, int toner_save, uint8_t *out)
+{
+    if (!toner_save) {
+        halftone_row(dark + (size_t)(y % ring) * width, width, (int)y, dpi, out);
+    } else {
+        const uint8_t *around[5];
+        for (int k = -reach; k <= reach; k++) {
+            long r = (long)y + k;
+            around[k + reach] = r >= 0 && r < (long)have ? dark + (size_t)(r % ring) * width : NULL;
+        }
+        tonersave_row(around, width, (int)y, dpi, out);
+    }
+    return spl_page_row(w, out);
+}
+
 int main(int argc, char **argv)
 {
     int fd = 0, page = 0, nopts, status = 0, toner_save;
@@ -44,7 +65,7 @@ int main(int argc, char **argv)
     spl_writer *w;
     spl_job_t job = { 0 };
     const char *v;
-    uint8_t *line = NULL, *ring = NULL, *saved = NULL;
+    uint8_t *line = NULL, *dark = NULL, *out = NULL;
 
     if (argc < 6 || argc > 7) {
         fprintf(stderr, "Usage: %s job-id user title copies options [file]\n", argv[0]);
@@ -60,6 +81,17 @@ int main(int argc, char **argv)
     v = cupsGetOption("TonerSave", nopts, opts);
     /* The PPD option is Boolean (True/False); accept On/Yes too for manual use. */
     toner_save = v && (!strcasecmp(v, "True") || !strcasecmp(v, "On") || !strcasecmp(v, "Yes"));
+    /* ManualDuplex=<LongEdge|ShortEdge><Backs|Fronts>: step 1 prints the backs, step 2 the fronts. */
+    v = cupsGetOption("ManualDuplex", nopts, opts);
+    if (v && (!strncasecmp(v, "LongEdge", 8) || !strncasecmp(v, "ShortEdge", 9))) {
+        const char *step = v + (tolower((unsigned char)v[0]) == 'l' ? 8 : 9);
+        job.duplex = tolower((unsigned char)v[0]) == 'l' ? SPL_DUPLEX_LONG : SPL_DUPLEX_SHORT;
+        job.duplex_step = !strcasecmp(step, "Backs") ? 1 : !strcasecmp(step, "Fronts") ? 2 : 0;
+        if (!job.duplex_step)
+            job.duplex = SPL_DUPLEX_NONE;
+    }
+    /* The copies are made upstream; manual duplex gives each its own sheets. */
+    job.copies = atoi(argv[4]);
     job.job_name = argv[3];
     job.user_name = argv[2];
 
@@ -70,9 +102,19 @@ int main(int argc, char **argv)
         int width = (int)hdr.cupsWidth, out_bytes = (width + 7) / 8;
         int invert = is_white_space(hdr.cupsColorSpace);
         int gray = hdr.cupsBitsPerPixel == 8;
-        const spl_paper_t *paper = spl_paper_lookup((int)hdr.PageSize[0], (int)hdr.PageSize[1]);
+        /* cupsPageSize keeps the fractions of a custom size; older headers lack it. */
+        double pw = hdr.cupsPageSize[0] > 0 ? hdr.cupsPageSize[0] : hdr.PageSize[0];
+        double ph = hdr.cupsPageSize[1] > 0 ? hdr.cupsPageSize[1] : hdr.PageSize[1];
+        const spl_paper_t *paper = spl_paper_lookup((int)lround(pw), (int)lround(ph));
         spl_page_t sp = { 0 };
 
+        if (hdr.HWResolution[0] != hdr.HWResolution[1] ||
+            (hdr.HWResolution[0] != 600 && hdr.HWResolution[0] != 1200)) {
+            fprintf(stderr, "ERROR: Unsupported resolution %ux%u dpi\n",
+                    hdr.HWResolution[0], hdr.HWResolution[1]);
+            status = 1;
+            break;
+        }
         if (!(gray || hdr.cupsBitsPerPixel == 1) || hdr.cupsBitsPerColor != hdr.cupsBitsPerPixel) {
             fprintf(stderr, "ERROR: Unsupported raster: %u bits per pixel, color space %d\n",
                     hdr.cupsBitsPerPixel, hdr.cupsColorSpace);
@@ -94,63 +136,46 @@ int main(int argc, char **argv)
         sp.yres = (int)hdr.HWResolution[1];
         sp.copies = 1;
         sp.paper_source = hdr.ManualFeed || hdr.MediaPosition == 2 ? 2 : 1;
-        sp.width300 = (int)((hdr.PageSize[0] * 300 + 36) / 72);     /* round to nearest, as HP does */
-        sp.height300 = (int)((hdr.PageSize[1] * 300 + 36) / 72);
-        sp.paper_type = paper ? paper->paper_type : 0;
-        if (paper)
-            sp.band_bytes = sp.xres >= 1200 ? paper->band_bytes_1200 : paper->band_bytes_600;
+        sp.width300 = (int)lround(pw * 300 / 72);     /* round to nearest, as HP does */
+        sp.height300 = (int)lround(ph * 300 / 72);
+        sp.paper_type = paper ? paper->paper_type : SPL_PAPER_CUSTOM;
+        sp.band_bytes = spl_band_bytes(pw, sp.xres);
 
         free(line);
-        free(ring);
-        free(saved);
+        free(dark);
+        free(out);
         line = malloc(hdr.cupsBytesPerLine);
-        /* Three 1-bit rows: toner save needs the rows above and below. */
-        ring = malloc(3 * (size_t)out_bytes);
-        saved = malloc((size_t)out_bytes);
-        if (!line || !ring || !saved || spl_page_begin(w, &sp, out_bytes)) {
+        /* A ring of darkness rows: toner save looks `reach` rows above and below. */
+        int reach = toner_save ? (sp.xres >= 1200 ? 2 : 1) : 0, ring = 2 * reach + 1;
+        dark = malloc((size_t)ring * width);
+        out = malloc((size_t)out_bytes);
+        if (!line || !dark || !out || spl_page_begin(w, &sp, width)) {
             status = 1;
             break;
         }
 
         unsigned y = 0;
         for (; y < hdr.cupsHeight && !canceled; y++) {
-            uint8_t *row = ring + (y % 3) * (size_t)out_bytes;
+            uint8_t *d = dark + (size_t)(y % ring) * width;
 
             if (cupsRasterReadPixels(ras, line, hdr.cupsBytesPerLine) < 1)
                 break;
-            if (gray) {
-                if (invert)
-                    for (int x = 0; x < width; x++)
-                        line[x] = (uint8_t)~line[x];
-                halftone_row(line, width, (int)y, row);
-            } else {
-                for (int x = 0; x < out_bytes; x++)
-                    row[x] = invert ? (uint8_t)~line[x] : line[x];
-                if (width % 8)          /* clear padding bits past the last pixel */
-                    row[out_bytes - 1] &= (uint8_t)(0xFF << (8 - width % 8));
-            }
-            if (!toner_save) {
-                if (spl_page_row(w, row)) {
-                    status = 1;
-                    break;
-                }
-            } else if (y > 0) {
-                /* Emit the previous row now that the one below it is known. */
-                tonersave_row(y > 1 ? ring + ((y - 2) % 3) * (size_t)out_bytes : NULL,
-                              ring + ((y - 1) % 3) * (size_t)out_bytes, row,
-                              out_bytes, (int)y - 1, saved);
-                if (spl_page_row(w, saved)) {
-                    status = 1;
-                    break;
-                }
+            if (gray)
+                for (int x = 0; x < width; x++)
+                    d[x] = invert ? (uint8_t)~line[x] : line[x];
+            else
+                for (int x = 0; x < width; x++)
+                    d[x] = ((line[x >> 3] >> (7 - (x & 7))) & 1) != invert ? 255 : 0;
+            /* Row y - reach now has all its neighbours. */
+            if ((int)y >= reach && emit_row(w, dark, ring, reach, y - reach, y + 1, width, sp.xres,
+                                            toner_save, out)) {
+                status = 1;
+                break;
             }
         }
-        if (!status && toner_save && y > 0) {
-            tonersave_row(y > 1 ? ring + ((y - 2) % 3) * (size_t)out_bytes : NULL,
-                          ring + ((y - 1) % 3) * (size_t)out_bytes, NULL,
-                          out_bytes, (int)y - 1, saved);
-            status = spl_page_row(w, saved) ? 1 : 0;
-        }
+        for (unsigned e = y > (unsigned)reach ? y - reach : 0; !status && e < y; e++)
+            if (emit_row(w, dark, ring, reach, e, y, width, sp.xres, toner_save, out))
+                status = 1;
         if (status || spl_page_end(w)) {
             status = 1;
             break;
@@ -166,8 +191,8 @@ int main(int argc, char **argv)
     cupsRasterClose(ras);
     cupsFreeOptions(nopts, opts);
     free(line);
-    free(ring);
-    free(saved);
+    free(dark);
+    free(out);
     if (fd)
         close(fd);
     return canceled ? 0 : status;

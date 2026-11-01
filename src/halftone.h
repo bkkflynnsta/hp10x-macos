@@ -11,16 +11,17 @@
 /*
  * Convert one row of `width` darkness values (0 = white, 255 = black) to packed
  * 1-bit pixels (1 = black, MSB first). `y` is the page row, used to pick the
- * screen phase. `out` must hold (width + 7) / 8 bytes.
+ * screen phase; `dpi` (600 or 1200) picks the screen and tone curve. `out` must hold
+ * (width + 7) / 8 bytes.
  */
-void halftone_row(const uint8_t *dark, int width, int y, uint8_t *out);
+void halftone_row(const uint8_t *dark, int width, int y, int dpi, uint8_t *out);
 
 /*
- * Toner save, as HP's driver does it: keep edges solid and clear a diagonal grid of
- * pixels inside solid areas (about a quarter of the interior). `prev`/`next` are the
- * neighbouring 1-bit rows (NULL at the page edges); writes `nbytes` bytes to `out`.
+ * Toner save, as HP's driver does it: a lighter tone curve that also screens solid
+ * black, while edges (a neighbour less than half as dark) print as normal, so text
+ * keeps a solid outline. `rows` holds the darkness rows y-r .. y+r, where r is 1 at
+ * 600 dpi and 2 at 1200 dpi; rows off the page are NULL. Writes (width + 7) / 8 bytes.
  */
-void tonersave_row(const uint8_t *prev, const uint8_t *cur, const uint8_t *next,
-                   int nbytes, int y, uint8_t *out);
+void tonersave_row(const uint8_t *const *rows, int width, int y, int dpi, uint8_t *out);
 
 #endif

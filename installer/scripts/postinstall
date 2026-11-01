@@ -12,6 +12,14 @@ DIR=/Library/Printers/hp10x
 /bin/launchctl bootstrap system "$PLIST" 2>/dev/null || /bin/launchctl kickstart -k system/com.pointcleardigital.hp10x.ippusb-guard
 "$DIR/hp10x-ippusb-guard" --once
 
+# Upgrades: give existing hp10x queues the new PPD (CUPS keeps their default choices).
+# This runs before the restart below, which would make lpadmin race cupsd.
+for ppd in /etc/cups/ppd/*.ppd; do
+    [ -f "$ppd" ] && /usr/bin/grep -q '^\*ShortNickName: "HP Laser 103/107/108 (hp10x)"' "$ppd" || continue
+    /usr/sbin/lpadmin -p "$(/usr/bin/basename "$ppd" .ppd)" \
+        -m "Library/Printers/PPDs/Contents/Resources/HP Laser 10x (hp10x).gz" 2>/dev/null
+done
+
 # Let CUPS pick up the new PPD.
 /bin/launchctl kickstart -k system/org.cups.cupsd 2>/dev/null
 exit 0

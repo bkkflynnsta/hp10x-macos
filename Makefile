@@ -27,8 +27,13 @@ $(BUILD)/rastertohp10x: filter/rastertohp10x.c $(LIB_SRC) $(LIB_HDR) | $(BUILD)
 $(BUILD)/test_algo0x11: tests/test_algo0x11.c src/algo0x11.c src/algo0x11.h | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ tests/test_algo0x11.c src/algo0x11.c
 
-test: all $(BUILD)/test_algo0x11
+$(BUILD)/test_spl: tests/test_spl.c $(LIB_SRC) $(LIB_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ tests/test_spl.c src/spl.c src/algo0x11.c
+
+test: all $(BUILD)/test_algo0x11 $(BUILD)/test_spl
 	$(BUILD)/test_algo0x11
+	$(BUILD)/test_spl
+	tests/duplex-filter.sh
 	tests/compare-with-hp.sh
 
 clean:

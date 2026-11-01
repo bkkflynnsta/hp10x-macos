@@ -36,6 +36,7 @@ In the print dialog, these are under **Printer Options** (or **Printer Features*
 | Option | Choices |
 |---|---|
 | Page Size | Letter, Legal, A4, A5, B5, Executive, Folio, Oficio, 4×6 postcard, four envelope sizes, or a custom size from 3×5 in (76×127 mm) up to US Legal |
+| Resolution | 600 dpi, or 1200 dpi (High Resolution) for sharper text and finer grays |
 | Toner Save | Prints text as a solid outline with a lighter inside, and grays lighter; saves about a fifth of the toner |
 | Two-Sided Printing (Manual) | Off, or Step 1 / Step 2 for long-edge or short-edge binding (below) |
 

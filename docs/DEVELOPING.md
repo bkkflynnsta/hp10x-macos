@@ -34,7 +34,7 @@ The comparison test needs HP's Samsung driver 3.93 and a queue that uses its "Sa
 | Mode | Page header | Gray-ramp tone (≤ 3 points) | Text |
 |---|---|---|---|
 | 600 dpi | identical | 1.2 points | 0.08% of pixels differ (≤ 0.5%) |
-| 1200 dpi | identical | 0.8 points | ink weight −2.3% (≤ 5%) |
+| 1200 dpi | identical except the size, which HP's Mac driver halves | 0.8 points | ink weight −2.3% (≤ 5%) |
 | Toner save, 600 dpi | | 1.0 points | ink weight −0.2% |
 | Toner save, 1200 dpi | | 0.5 points | ink weight −1.3% |
 | Custom 250×400 pt | identical | | |
@@ -65,15 +65,15 @@ footer: 01 copies16
 end:    09 ESC%-12345X
 ```
 
-- Sizes are big-endian. Paper width and height are in 1/300 inch, rounded to the nearest unit. At 1200 dpi they're in 1/150 inch: the 1/300 value halved and rounded up.
+- Sizes are big-endian. Paper width and height are in 1/300 inch, rounded to the nearest unit, at both resolutions. HP's Mac driver halves them at 1200 dpi (1/150 inch), and the 108a starts those pages and then drops them. HP's Linux driver (ULD 1.00.39) keeps 1/300 inch, and those pages print.
 - Paper sizes not in the table use paper type 21 (custom). HP's driver accepts 3×5 in to US Legal.
 - Bands are 128 rows tall. The band width in bytes is the printable width rounded up to 32: `ceil((width_px − dpi/3) / 8)`, rounded up to a multiple of 32. That reproduces HP's per-paper table at both resolutions (Letter is 640 at 600 dpi, A4 is 608) and its custom sizes at 600 dpi. HP's own 1200 dpi custom bands are narrower than the page, which looks like a bug.
 - Band data is stored **column-major** (each byte column from top to bottom) and **inverted** (1 = white).
 - Blank bands are left out.
 - The checksum is the sum of the signature bytes plus the data bytes.
 - All 14 paper sizes produce exactly the page header and band width HP's driver does.
-- At 1200 dpi the PJL says `RESOLUTION = 1200` and leaves out `BITSPERPIXEL`. HP's High Resolution renders at 600 dpi and doubles it; the filter takes a 1200 dpi raster.
-- **The 108a doesn't print 1200 dpi pages.** It starts the page and then drops it, with HP's own driver too (tested on a freshly started printer, firmware R000105). So the PPD offers only 600 dpi. The 1200 dpi encoder stays, tested against HP's output, for the 103 and 107, which haven't been tested.
+- At 1200 dpi the PJL says `RESOLUTION = 1200` and leaves out `BITSPERPIXEL`. HP's Mac High Resolution renders at 600 dpi and doubles it; the filter takes a 1200 dpi raster.
+- 1200 dpi was verified on paper on the 108a (firmware R000105): sharper text, crisp vertical lines and an even gray ramp. HP's Linux driver screens its darker 1200 dpi grays almost solid black, so the tone curve stays the one from HP's Mac driver.
 
 ### Manual duplex
 

@@ -4,7 +4,7 @@
 *% Not affiliated with or endorsed by HP Inc. Page sizes and printable areas follow
 *% the Samsung M2020-series engine these printers are built on.
 *FormatVersion: "4.3"
-*FileVersion: "0.2.0"
+*FileVersion: "0.3.0"
 *LanguageVersion: English
 *LanguageEncoding: ISOLatin1
 *PCFileName: "HP10X.PPD"
@@ -33,8 +33,7 @@
 *cupsModelNumber: 0
 *cupsFilter: "application/vnd.cups-raster 0 /Library/Printers/hp10x/Filters/rastertohp10x"
 
-*% 600 dpi, 8-bit gray: the filter screens gray itself. The filter can also encode
-*% 1200 dpi, but the 108a doesn't print 1200 dpi pages, even from HP's driver.
+*% 8-bit gray at 600 or 1200 dpi: the filter screens gray itself.
 *OpenUI *ColorModel/Color Mode: PickOne
 *OrderDependency: 10 AnySetup *ColorModel
 *DefaultColorModel: Gray
@@ -45,6 +44,7 @@
 *OrderDependency: 10 AnySetup *Resolution
 *DefaultResolution: 600dpi
 *Resolution 600dpi/600 dpi: "<</HWResolution[600 600]>>setpagedevice"
+*Resolution 1200dpi/1200 dpi (High Resolution): "<</HWResolution[1200 1200]>>setpagedevice"
 *CloseUI: *Resolution
 
 *% Two jobs: step 1 prints the backs; move the printed stack from the output tray to the

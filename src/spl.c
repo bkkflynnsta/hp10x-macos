@@ -11,7 +11,8 @@
  *   then 0x09ABCDEF (LE), compressed data, checksum32be (sum of signature + data bytes).
  * Band data for algorithm 0x11 is column-major (each byte column top to bottom)
  * and inverted (1 = white).
- * At 1200 dpi the page header's paper size is in 1/150 inch instead of 1/300.
+ * The page header's paper size is in 1/300 inch at both resolutions, as HP's Linux driver
+ * sends it. HP's Mac driver halves it at 1200 dpi, and the 108a drops those pages.
  *
  * Manual duplex is two ordinary jobs, step 1 for the backs and step 2 for the fronts,
  * with the user moving the stack from the output tray to the input tray in between.
@@ -180,9 +181,7 @@ static void put_be32(uint8_t *p, uint32_t v)
 
 static int write_page_header(FILE *out, const spl_page_t *page)
 {
-    /* 1/300 inch at 600 dpi, 1/150 at 1200; HP rounds up. */
-    int wu = (page->width300 * 600 + page->xres - 1) / page->xres;
-    int hu = (page->height300 * 600 + page->yres - 1) / page->yres;
+    int wu = page->width300, hu = page->height300;     /* 1/300 inch at any resolution */
     uint8_t h[17];
 
     h[0x0] = 0x00;                          /* page header */

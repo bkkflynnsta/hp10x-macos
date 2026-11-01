@@ -5,7 +5,7 @@
  *
  * Usage (CUPS): rastertohp10x job user title copies options [file]
  * Accepts 8-bit gray (K, W or sGray; screened here) or 1-bit (K or W) raster, at
- * 600 or 1200 dpi. The PPD asks for 600: the 108a drops 1200 dpi pages, even HP's. Both become darkness rows (0 = white, 255 = black) before screening.
+ * 600 or 1200 dpi. Both become darkness rows (0 = white, 255 = black) before screening.
  * Options read from argv[5]: TonerSave=True|False,
  *   ManualDuplex=None|LongEdgeBacks|LongEdgeFronts|ShortEdgeBacks|ShortEdgeFronts
  * Copies are made upstream (the PPD sets cupsManualCopies), so each page is sent once.

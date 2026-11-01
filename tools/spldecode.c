@@ -27,7 +27,7 @@ static int fail(const char *msg, size_t off)
 int main(int argc, char **argv)
 {
     const char *prefix = argc > 2 ? argv[2] : NULL;
-    const char *marker = "ENTER LANGUAGE=QPDL";
+    const char *marker = "QPDL";        /* "ENTER LANGUAGE=QPDL", or " = " in HP's Linux driver */
     FILE *f;
     uint8_t *d, *bmp = NULL;
     size_t n, p, cap = 1 << 20;
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     fclose(f);
 
     if (!(m = memmem(d, n, marker, strlen(marker))))
-        return fail("no ENTER LANGUAGE=QPDL", 0);
+        return fail("no ENTER LANGUAGE QPDL", 0);
     p = (size_t)((uint8_t *)m - d) + strlen(marker);
     fwrite(d, 1, p, stdout);
     putchar('\n');
@@ -65,14 +65,19 @@ int main(int argc, char **argv)
                 return fail("truncated page header", p);
             int yres = h[1] * 100, xres = h[0x10] * 100;
             int w300 = (h[5] << 8) | h[6], h300 = (h[7] << 8) | h[8];
-            /* The size field is 1/300 inch scaled by 600/dpi: 1/150 inch at 1200 dpi. */
-            width = (int)((long)w300 * xres * xres / 180000);
-            height = (int)((long)h300 * yres * yres / 180000);
+            /* The size field is 1/300 inch; HP's Mac driver uses 1/150 inch at 1200 dpi,
+               which shows as a page narrower than its bands. */
+            int units = 300;
+            if (xres > 600 && p + 17 + 4 <= n && d[p + 17] == 0x0C &&
+                (long)w300 * xres / 300 < ((d[p + 19] << 8) | d[p + 20]))
+                units = 150;
+            width = (int)((long)w300 * xres / units);
+            height = (int)((long)h300 * yres / units);
             row_bytes = (width + 7) / 8;
             free(bmp);
             bmp = calloc((size_t)row_bytes, (size_t)height);
             page++;
-            printf("page %d: %dx%d dpi copies=%d paper=%d size=%dx%d/300in source=%d "
+            printf("page %d: %dx%d dpi copies=%d paper=%d size=%dx%d source=%d "
                    "duplex=%d tumble=%d ver=%d bytes[a,d,f]=%02x,%02x,%02x\n",
                    page, xres, yres, (h[2] << 8) | h[3], h[4], w300, h300, h[9],
                    h[0xb], h[0xc], h[0xe], h[0xa], h[0xd], h[0xf]);

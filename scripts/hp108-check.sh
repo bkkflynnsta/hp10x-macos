@@ -1,5 +1,6 @@
 #!/bin/zsh
 # Health check for an HP Laser 103/107/108 queue on macOS. Read-only; prints nothing to paper.
+# SPDX-License-Identifier: GPL-2.0-or-later
 Q=${1:-HP_Laser_108a}
 F=/Library/Printers/Samsung/UPD/Filters/rastertosec
 ok()   { print -nP "%F{green}OK%f   "; print -r -- "$*"; }

@@ -19,6 +19,7 @@ tools/spldecode     decode any QPDL stream into PBM pages and check every checks
 tools/pbm2png.py    crop/scale a PBM into a PNG for viewing
 tests/              unit tests and a pixel comparison against HP's own driver
 installer/          guard daemon, launchd plist, pkg scripts, build-pkg.sh
+scripts/            maintenance scripts run from the repo; not installed by the package
 ```
 
 ## Build and test

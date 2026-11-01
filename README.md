@@ -93,7 +93,7 @@ lp -d HP_Laser_108a /etc/hosts     # test print
 
 ## Troubleshooting
 
-Run `./hp108-check.sh` from this folder. It checks every item below and prints the results.
+Run `scripts/hp108-check.sh` from this folder. It checks every item below and prints the results.
 
 ### Queue stuck on "The printer is offline" (macOS 27)
 

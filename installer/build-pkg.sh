@@ -31,8 +31,10 @@ gzip -9 -n -c "$ROOT/ppd/HP-Laser-10x.ppd" > "$STAGE/Library/Printers/PPDs/Conte
 chmod 644 "$STAGE/Library/Printers/PPDs/Contents/Resources/HP Laser 10x (hp10x).gz"
 
 if [[ -n $SIGN_ID ]]; then
+    # Notarization needs a secure timestamp; development builds skip the round trip to Apple.
+    [[ $SIGN_ID == "Developer ID"* ]] && TIMESTAMP=--timestamp || TIMESTAMP=--timestamp=none
     for f in "$STAGE/Library/Printers/hp10x/Filters/rastertohp10x" "$STAGE/Library/Printers/hp10x/hp10x-ippusb-guard"; do
-        codesign --force --options runtime --timestamp=none --identifier "$ID.$(basename "$f")" --sign "$SIGN_ID" "$f"
+        codesign --force --options runtime $TIMESTAMP --identifier "$ID.$(basename "$f")" --sign "$SIGN_ID" "$f"
     done
     echo "signed binaries with: $SIGN_ID"
 else

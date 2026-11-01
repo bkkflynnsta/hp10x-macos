@@ -22,7 +22,11 @@ Despite the `URF` and `PWGRaster` entries above, these were tested on firmware `
 
 ## Two ways to set it up
 
-- **hp10x, the open-source driver from this project.** Build it with `installer/build-pkg.sh`, then run `sudo installer -pkg build/hp10x-<version>.pkg -target /`. Add the printer in System Settings and choose **HP Laser 103/107/108 (hp10x)** under **Use**. It also fixes the "printer is offline" problem described below automatically, with no Terminal commands. It's been tested on a 108a with macOS 27.0.1. See [docs/DEVELOPING.md](docs/DEVELOPING.md) for details.
+- **hp10x, the open-source driver from this project** (recommended):
+  1. Download `hp10x-<version>.pkg` from [Releases](https://github.com/bkkflynnsta/hp10x-macos/releases/latest) and open it. It's signed and notarized by Apple, and needs macOS 12 or later on Apple Silicon or Intel.
+  2. Connect the printer, then in **System Settings → Printers & Scanners** add it and choose **HP Laser 103/107/108 (hp10x)** under **Use**.
+
+  It also fixes the "printer is offline" problem described below automatically, with no Terminal commands. It's been tested on a 108a with macOS 27.0.1. To remove it, run `sudo /Library/Printers/hp10x/uninstall.sh`. To build it yourself, see [docs/DEVELOPING.md](docs/DEVELOPING.md).
 - **HP's Samsung driver**, set up as described in the rest of this guide.
 
 ### hp10x print options
